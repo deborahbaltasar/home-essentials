@@ -4,12 +4,16 @@ import { useAuth } from "../../state/AuthContext";
 import { Button } from "../ui/Button";
 import { useTranslation } from "react-i18next";
 import { setLanguage } from "../../i18n";
+import type { Home as HomeType } from "../../types";
 
 type TopBarProps = {
   homeName: string;
+  homes?: HomeType[];
+  activeHomeId?: string;
+  onHomeChange?: (homeId: string) => void;
 };
 
-export const TopBar = ({ homeName }: TopBarProps) => {
+export const TopBar = ({ homeName, homes = [], activeHomeId, onHomeChange }: TopBarProps) => {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
 
@@ -30,6 +34,20 @@ export const TopBar = ({ homeName }: TopBarProps) => {
           >
             <Home size={16} />
           </Link>
+          {homes.length > 1 && (
+            <select
+              value={activeHomeId}
+              onChange={(event) => onHomeChange?.(event.target.value)}
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500"
+              aria-label={t("misc.selectHome")}
+            >
+              {homes.map((home) => (
+                <option key={home.id} value={home.id}>
+                  {home.name}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             value={i18n.language}
             onChange={(event) => setLanguage(event.target.value)}

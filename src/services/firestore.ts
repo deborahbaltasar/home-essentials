@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore";
 import type { User } from "firebase/auth";
 import { db } from "./firebase";
-import type { ChecklistItem, Home, Palette, Room, Share } from "../types";
+import type { ChecklistItem, Home, Invitation, Palette, Room, Share } from "../types";
 import { createShareId } from "../utils/share";
 import { defaultPalette } from "../constants/palettes";
 
@@ -26,6 +26,7 @@ const roomsCollection = collection(db, "rooms");
 const itemsCollection = collection(db, "items");
 const sharesCollection = collection(db, "shares");
 const usersCollection = collection(db, "users");
+const invitationsCollection = collection(db, "invitations");
 
 const seedRooms = [
   {
@@ -227,45 +228,132 @@ export const updatePalette = async (homeId: string, palette: Palette) => {
 
 export const inviteMember = async ({
   homeId,
+  homeName,
   email,
+  createdBy,
 }: {
   homeId: string;
+  homeName: string;
   email: string;
+  createdBy: string;
 }) => {
   const emailLower = email.trim().toLowerCase();
   if (!emailLower) return;
-  const usersQuery = query(usersCollection, where("emailLower", "==", emailLower));
-  const userSnap = await getDocs(usersQuery);
-  const homeRef = doc(homesCollection, homeId);
+  const existingQuery = query(
+    invitationsCollection,
+    where("homeId", "==", homeId),
+    where("emailLower", "==", emailLower),
+    where("status", "==", "pending")
+  );
+  const existingSnap = await getDocs(existingQuery);
+  if (!existingSnap.empty) return;
 
-  if (!userSnap.empty) {
-    const memberId = userSnap.docs[0].id;
-    await updateDoc(homeRef, {
-      members: arrayUnion(memberId),
-      pendingInvites: arrayRemove(emailLower),
-    });
-  } else {
-    await updateDoc(homeRef, {
-      pendingInvites: arrayUnion(emailLower),
-    });
-  }
+  await addDoc(invitationsCollection, {
+    homeId,
+    homeName,
+    createdBy,
+    email: email.trim(),
+    emailLower,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+
+  await updateDoc(doc(homesCollection, homeId), {
+    pendingInvites: arrayUnion(emailLower),
+  });
 };
 
-export const processPendingInvites = async (user: User) => {
+export const fetchInvitationsForHome = async (homeId: string) => {
+  const invitesQuery = query(invitationsCollection, where("homeId", "==", homeId));
+  const snap = await getDocs(invitesQuery);
+  const invites = snap.docs.map(
+    (docSnap) =>
+      ({ id: docSnap.id, ...(docSnap.data() as Omit<Invitation, "id">) }) as Invitation
+  );
+  invites.sort((a, b) => {
+    const aTime = (a.createdAt as { seconds?: number })?.seconds ?? 0;
+    const bTime = (b.createdAt as { seconds?: number })?.seconds ?? 0;
+    return bTime - aTime;
+  });
+  return invites;
+};
+
+export const fetchInvitationsForEmail = async (emailLower: string) => {
+  const invitesQuery = query(
+    invitationsCollection,
+    where("emailLower", "==", emailLower)
+  );
+  const snap = await getDocs(invitesQuery);
+  const invites = snap.docs.map(
+    (docSnap) =>
+      ({ id: docSnap.id, ...(docSnap.data() as Omit<Invitation, "id">) }) as Invitation
+  );
+  invites.sort((a, b) => {
+    const aTime = (a.createdAt as { seconds?: number })?.seconds ?? 0;
+    const bTime = (b.createdAt as { seconds?: number })?.seconds ?? 0;
+    return bTime - aTime;
+  });
+  return invites;
+};
+
+export const acceptInvitation = async (invite: Invitation, userId: string) => {
+  const batch = writeBatch(db);
+  batch.update(doc(homesCollection, invite.homeId), {
+    members: arrayUnion(userId),
+    pendingInvites: arrayRemove(invite.emailLower),
+  });
+  batch.update(doc(invitationsCollection, invite.id), {
+    status: "accepted",
+    inviteeUid: userId,
+    respondedAt: serverTimestamp(),
+  });
+  await batch.commit();
+};
+
+export const declineInvitation = async (inviteId: string) => {
+  const inviteRef = doc(invitationsCollection, inviteId);
+  const inviteSnap = await getDoc(inviteRef);
+  if (!inviteSnap.exists()) return;
+  const invite = inviteSnap.data() as Invitation;
+  const batch = writeBatch(db);
+  batch.update(inviteRef, {
+    status: "denied",
+    respondedAt: serverTimestamp(),
+  });
+  batch.update(doc(homesCollection, invite.homeId), {
+    pendingInvites: arrayRemove(invite.emailLower),
+  });
+  await batch.commit();
+};
+
+export const syncInvitationsForUser = async (user: User) => {
   const emailLower = user.email?.toLowerCase();
   if (!emailLower) return;
-  const pendingQuery = query(homesCollection, where("pendingInvites", "array-contains", emailLower));
-  const pendingSnap = await getDocs(pendingQuery);
+  const invitesQuery = query(
+    invitationsCollection,
+    where("emailLower", "==", emailLower),
+    where("status", "==", "pending")
+  );
+  const snap = await getDocs(invitesQuery);
+  if (snap.empty) return;
   const batch = writeBatch(db);
-  pendingSnap.forEach((homeDoc) => {
-    batch.update(homeDoc.ref, {
-      members: arrayUnion(user.uid),
-      pendingInvites: arrayRemove(emailLower),
+  for (const docSnap of snap.docs) {
+    const invite = docSnap.data() as Invitation;
+    const homeSnap = await getDoc(doc(homesCollection, invite.homeId));
+    if (!homeSnap.exists()) continue;
+    const home = homeSnap.data() as Home;
+    const isMember = (home.members ?? []).includes(user.uid);
+    if (!isMember) continue;
+    batch.update(docSnap.ref, {
+      status: "accepted",
+      inviteeUid: user.uid,
+      respondedAt: serverTimestamp(),
     });
-  });
-  if (!pendingSnap.empty) {
-    await batch.commit();
+    batch.update(doc(homesCollection, invite.homeId), {
+      pendingInvites: arrayRemove(invite.emailLower),
+    });
   }
+  await batch.commit();
 };
 
 export const createShare = async ({

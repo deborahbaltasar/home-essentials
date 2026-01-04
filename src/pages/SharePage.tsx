@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AppLayoutContext } from "../components/layout/AppLayout";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -11,6 +11,7 @@ import { useHomes } from "../hooks/useHomes";
 import { inviteMember, createShare } from "../services/firestore";
 import { useAuth } from "../state/AuthContext";
 import { useToast } from "../components/ui/Toast";
+import { useInvitationsForHome } from "../hooks/useInvitations";
 
 export const SharePage = () => {
   const { rooms, items } = useOutletContext<AppLayoutContext>();
@@ -18,6 +19,8 @@ export const SharePage = () => {
   const { user } = useAuth();
   const { notify } = useToast();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const { data: homeInvites } = useInvitationsForHome(activeHome?.id);
   const isOwner = activeHome?.ownerId === user?.uid;
   const [inviteEmail, setInviteEmail] = useState("");
   const [selectedRooms, setSelectedRooms] = useState<Set<string>>(new Set());
@@ -34,10 +37,17 @@ export const SharePage = () => {
   }, [rooms, items]);
 
   const { mutateAsync: sendInvite, isPending: isInviting } = useMutation({
-    mutationFn: () => inviteMember({ homeId: activeHome!.id, email: inviteEmail }),
+    mutationFn: () =>
+      inviteMember({
+        homeId: activeHome!.id,
+        homeName: activeHome!.name,
+        createdBy: user!.uid,
+        email: inviteEmail,
+      }),
     onSuccess: () => {
       notify({ title: t("toasts.inviteSent"), description: t("toasts.inviteSentDesc") });
       setInviteEmail("");
+      queryClient.invalidateQueries({ queryKey: ["invitations", "home", activeHome?.id] });
     },
   });
 
@@ -90,6 +100,40 @@ export const SharePage = () => {
         {!isOwner && (
           <p className="mt-2 text-xs text-slate-400">{t("share.ownerOnly")}</p>
         )}
+        <div className="mt-5 space-y-2">
+          {(homeInvites ?? []).length === 0 ? (
+            <p className="text-sm text-slate-400">{t("share.invitesEmpty")}</p>
+          ) : (
+            (homeInvites ?? []).map((invite) => {
+              const statusLabel =
+                invite.status === "accepted"
+                  ? t("share.statusAccepted")
+                  : invite.status === "denied"
+                  ? t("share.statusDenied")
+                  : t("share.statusPending");
+              const statusTone =
+                invite.status === "accepted"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : invite.status === "denied"
+                  ? "bg-rose-100 text-rose-700"
+                  : "bg-amber-100 text-amber-700";
+              return (
+                <div
+                  key={invite.id}
+                  className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                >
+                  <div>
+                    <p className="font-medium text-slate-700">{invite.email}</p>
+                    <p className="text-xs text-slate-400">{statusLabel}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusTone}`}>
+                    {statusLabel}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
       </Card>
 
       <Card className="bg-white/80">

@@ -21,7 +21,13 @@ export type AppLayoutContext = {
 export const AppLayout = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { activeHome, isLoading: homeLoading, refetch: refetchHomes } = useHomes();
+  const {
+    activeHome,
+    homes,
+    setActiveHome,
+    isLoading: homeLoading,
+    refetch: refetchHomes,
+  } = useHomes();
   const { data: rooms, isLoading: roomsLoading, refetch: refetchRooms } = useRooms(
     activeHome?.id
   );
@@ -54,7 +60,12 @@ export const AppLayout = () => {
 
   return (
     <div className="min-h-screen">
-      <TopBar homeName={activeHome.name} />
+      <TopBar
+        homeName={activeHome.name}
+        homes={homes}
+        activeHomeId={activeHome.id}
+        onHomeChange={setActiveHome}
+      />
       <div className="mx-auto flex w-full max-w-6xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <Sidebar rooms={rooms ?? []} homeId={activeHome.id} />
         <main className="flex-1">

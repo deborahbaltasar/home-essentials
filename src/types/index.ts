@@ -7,6 +7,8 @@ export type Palette = {
   neutral: string;
 };
 
+export type InvitationStatus = "pending" | "accepted" | "denied";
+
 export type Home = {
   id: string;
   ownerId: string;
@@ -43,4 +45,17 @@ export type Share = {
   mode: "readonly";
   roomsIncluded: string[];
   createdAt?: unknown;
+};
+
+export type Invitation = {
+  id: string;
+  homeId: string;
+  homeName: string;
+  createdBy: string;
+  email: string;
+  emailLower: string;
+  status: InvitationStatus;
+  inviteeUid?: string;
+  createdAt?: unknown;
+  respondedAt?: unknown;
 };

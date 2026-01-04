@@ -9,12 +9,15 @@ import { EmptyState } from "../components/shared/EmptyState";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
-import { createRoom, deleteRoom, reorderRooms, updateRoom } from "../services/firestore";
+import { acceptInvitation, createRoom, declineInvitation, deleteRoom, reorderRooms, updateRoom } from "../services/firestore";
 import type { Room } from "../types";
 import { Pencil, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
 import { normalizeName } from "../utils/normalize";
 import { useToast } from "../components/ui/Toast";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../state/AuthContext";
+import { useInvitationsForEmail } from "../hooks/useInvitations";
+import { useHomes } from "../hooks/useHomes";
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -25,6 +28,11 @@ export const DashboardPage = () => {
   const queryClient = useQueryClient();
   const { notify } = useToast();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const { setActiveHome } = useHomes();
+  const emailLower = user?.email?.toLowerCase();
+  const { data: invitations, refetch: refetchInvites } = useInvitationsForEmail(emailLower);
+  const pendingInvites = (invitations ?? []).filter((invite) => invite.status === "pending");
 
   if (isLoading) {
     return (
@@ -65,6 +73,56 @@ export const DashboardPage = () => {
         </div>
         <Progress value={totalPercent} />
       </Card>
+
+      {pendingInvites.length > 0 && (
+        <Card className="bg-white/80">
+          <h2 className="text-lg font-semibold">{t("invites.inboxTitle")}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t("invites.inboxDesc")}</p>
+          <div className="mt-4 space-y-3">
+            {pendingInvites.map((invite) => (
+              <div
+                key={invite.id}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">{invite.homeName}</p>
+                    <p className="text-xs text-slate-400">{invite.email}</p>
+                  </div>
+                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                    {t("share.statusPending")}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      await acceptInvitation(invite, user!.uid);
+                      await queryClient.invalidateQueries({ queryKey: ["homes", user?.uid] });
+                      await refetchInvites();
+                      notify({ title: t("share.statusAccepted"), description: invite.homeName });
+                      setActiveHome(invite.homeId);
+                    }}
+                  >
+                    {t("share.statusAccepted")}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={async () => {
+                      await declineInvitation(invite.id);
+                      await refetchInvites();
+                      notify({ title: t("share.statusDenied"), description: invite.homeName });
+                    }}
+                  >
+                    {t("share.statusDenied")}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {roomsWithCounts.length === 0 ? (
         <EmptyState title={t("dashboard.emptyTitle")} description={t("dashboard.emptyDesc")} />

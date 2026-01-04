@@ -1,4 +1,3 @@
-import React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "./Button";
 import { useTranslation } from "react-i18next";

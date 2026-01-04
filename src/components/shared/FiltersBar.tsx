@@ -1,4 +1,3 @@
-import React from "react";
 import { Select } from "../ui/Select";
 import { Button } from "../ui/Button";
 import { useTranslation } from "react-i18next";

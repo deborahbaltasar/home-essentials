@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { ChecklistItem } from "../../types";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";

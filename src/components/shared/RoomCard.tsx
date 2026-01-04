@@ -1,4 +1,3 @@
-import React from "react";
 import type { Room } from "../../types";
 import { Progress } from "../ui/Progress";
 import { useTranslation } from "react-i18next";

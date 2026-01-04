@@ -1,4 +1,3 @@
-import React from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../state/AuthContext";
 import { Button } from "../components/ui/Button";

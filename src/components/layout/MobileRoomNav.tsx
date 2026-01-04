@@ -1,4 +1,3 @@
-import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { Room } from "../../types";
 import { cn } from "../../utils/cn";

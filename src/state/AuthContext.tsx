@@ -1,12 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import {
-  type User,
-  getRedirectResult,
-  onAuthStateChanged,
-  signInWithPopup,
-  signInWithRedirect,
-  signOut,
-} from "firebase/auth";
+import { type User, onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../services/firebase";
 import { syncInvitationsForUser, upsertUserProfile } from "../services/firestore";
 
@@ -24,10 +17,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getRedirectResult(auth).catch((error) => {
-      console.error("Redirect auth error:", error);
-    });
-
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
@@ -40,12 +29,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = async () => {
-    const useRedirect = !!window.matchMedia?.("(pointer: coarse)")?.matches ||
-      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (useRedirect) {
-      await signInWithRedirect(auth, googleProvider);
-      return;
-    }
     await signInWithPopup(auth, googleProvider);
   };
 

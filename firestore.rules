@@ -1,0 +1,54 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isHomeMember(homeId) {
+      return isSignedIn() &&
+        (get(/databases/$(database)/documents/homes/$(homeId)).data.ownerId == request.auth.uid ||
+        request.auth.uid in get(/databases/$(database)/documents/homes/$(homeId)).data.members);
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if request.auth.uid == userId;
+    }
+
+    match /homes/{homeId} {
+      allow read: if isHomeMember(homeId);
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isHomeMember(homeId);
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isHomeMember(resource.data.homeId);
+      allow create: if isHomeMember(request.resource.data.homeId);
+      allow update, delete: if isHomeMember(resource.data.homeId);
+    }
+
+    match /items/{itemId} {
+      allow read: if isHomeMember(resource.data.homeId);
+      allow create: if isHomeMember(request.resource.data.homeId);
+      allow update, delete: if isHomeMember(resource.data.homeId);
+    }
+
+    match /shares/{shareId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isHomeMember(request.resource.data.homeId);
+      allow update, delete: if isSignedIn() && isHomeMember(resource.data.homeId);
+
+      match /rooms/{roomId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isHomeMember(get(/databases/$(database)/documents/shares/$(shareId)).data.homeId);
+      }
+
+      match /items/{itemId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isHomeMember(get(/databases/$(database)/documents/shares/$(shareId)).data.homeId);
+      }
+    }
+  }
+}

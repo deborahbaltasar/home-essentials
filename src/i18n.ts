@@ -5,8 +5,8 @@ const resources = {
   pt: {
     translation: {
       app: {
-        title: "Checklist da casa nova",
-        tagline: "Checklist de casa nova",
+        title: "Settla",
+        tagline: "Settla",
         rooms: "Comodos",
         home: "Casa",
         palette: "Paleta da casa",
@@ -22,11 +22,14 @@ const resources = {
         loadingShare: "Carregando lista compartilhada...",
       },
       login: {
-        headline: "Organize sua casa, comodo por comodo.",
+        headline: "Settla e organize sua casa com clareza.",
         subheadline:
-          "Crie comodos, gerencie itens essenciais e acompanhe o progresso em tempo real com sua familia.",
+          "Planeje cada comodo, acompanhe o progresso e celebre pequenas vitorias no caminho.",
         google: "Entrar com Google",
         safe: "Login seguro com Firebase Auth.",
+        motivationOne: "Cada checklist concluido deixa seu lar mais leve.",
+        motivationTwo: "Seu novo comeco com menos estresse e mais foco.",
+        motivationThree: "Conclua, compartilhe e aproveite o processo.",
       },
       onboarding: {
         title: "Vamos criar sua casa",
@@ -141,8 +144,8 @@ const resources = {
   en: {
     translation: {
       app: {
-        title: "New home checklist",
-        tagline: "New home checklist",
+        title: "Settla",
+        tagline: "Settla",
         rooms: "Rooms",
         home: "Home",
         palette: "Home palette",
@@ -158,11 +161,14 @@ const resources = {
         loadingShare: "Loading shared list...",
       },
       login: {
-        headline: "Organize your home, room by room.",
+        headline: "Settla and organize your home with clarity.",
         subheadline:
-          "Create rooms, manage essential items, and track progress in real time with your family.",
+          "Plan each room, track progress, and celebrate small wins along the way.",
         google: "Sign in with Google",
         safe: "Secure login with Firebase Auth.",
+        motivationOne: "Every checklist item brings you closer to comfort.",
+        motivationTwo: "A calmer move-in with focus and flow.",
+        motivationThree: "Complete, share, and enjoy the journey.",
       },
       onboarding: {
         title: "Lets create your home",
@@ -277,8 +283,8 @@ const resources = {
   es: {
     translation: {
       app: {
-        title: "Checklist de casa nueva",
-        tagline: "Checklist de casa nueva",
+        title: "Settla",
+        tagline: "Settla",
         rooms: "Habitaciones",
         home: "Casa",
         palette: "Paleta de la casa",
@@ -294,11 +300,14 @@ const resources = {
         loadingShare: "Cargando lista compartida...",
       },
       login: {
-        headline: "Organiza tu casa, habitacion por habitacion.",
+        headline: "Settla y organiza tu casa con claridad.",
         subheadline:
-          "Crea habitaciones, gestiona items esenciales y sigue el progreso en tiempo real con tu familia.",
+          "Planea cada habitacion, sigue el progreso y celebra cada avance.",
         google: "Entrar con Google",
         safe: "Inicio de sesion seguro con Firebase Auth.",
+        motivationOne: "Cada item completado acerca tu hogar ideal.",
+        motivationTwo: "Mudanza mas tranquila, con foco y orden.",
+        motivationThree: "Completa, comparte y disfruta el proceso.",
       },
       onboarding: {
         title: "Vamos a crear tu casa",

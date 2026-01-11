@@ -191,15 +191,6 @@ export const Sidebar = ({ rooms, homeId }: SidebarProps) => {
           ))}
         </div>
       </div>
-
-      <div className="mt-auto flex flex-col gap-2 text-sm">
-        <Link className="rounded-xl px-3 py-2 text-slate-500 hover:bg-slate-50" to="/app/palette">
-          {t("app.palette")}
-        </Link>
-        <Link className="rounded-xl px-3 py-2 text-slate-500 hover:bg-slate-50" to="/app/share">
-          {t("app.share")}
-        </Link>
-      </div>
     </aside>
   );
 };
